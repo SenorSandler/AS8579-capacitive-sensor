@@ -1,7 +1,7 @@
 /*
  * I and Q awaiting 16-bit SPI
  * SPI CLK frequency max 10MHz
- * CS active HIGH, MSB first, idle either high/low (SPI_MODE1 or 2) 
+ * CS active HIGH, MSB first, idle either high/low (SPI_MODE0) 
  * rising edge of SCLK: latch data in 
  * falling edge of SCLK: shift data out
  * 
@@ -13,7 +13,7 @@
 #define EDIVwrite 0x30
 
 const int chipSelectPin = 10;
-uint16_t IQ[2] = {0, 1}; // array to store the I and Q values from the quick read function
+uint16_t IQ[2] = {0, 0}; // array to store the I and Q values from the quick read function
 
 void setup() {
   pinMode(chipSelectPin, OUTPUT);
@@ -22,18 +22,20 @@ void setup() {
   SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE0));
   delay(10);
   initialize();
-  
+  delay(100);
+  //Serial.println(read_two_bytes_from_register(0x27));
 }
 
 void loop() {
-  if (read_two_bytes_from_register(0x02) == 0){ // Wait for ADC complete Bit (Address: 0x05 / Value: 0x01)
-    Serial.print(IQ[0]);
-    Serial.print("\t");
-    Serial.println(IQ[1]);
-    quick_read(IQ);
+  while (read_two_bytes_from_register(0x05) != 1){ // Wait for ADC complete Bit (Address: 0x05 / Value: 0x01)
+    Serial.println("Waitng for ADC to be ready");
+    delay(100);
   }
-  
-  delay(1000); 
+  quick_read(IQ);
+  Serial.print(IQ[0]);
+  Serial.print("\t");
+  Serial.println(IQ[1]);
+  delay(100); 
 }
 
 
@@ -118,10 +120,20 @@ void quick_read(uint16_t IQ[]){
  
  void initialize() {
   write_two_bytes_to_register(0x30, 0x00, 0x00);  // EDIV to 4MHz
-  write_two_bytes_to_register(0x31, 0x00, 0x03);  // Frequency to 125kHz
+  write_two_bytes_to_register(0x31, 0x00, 0x01);  // Frequency to 125kHz
   write_two_bytes_to_register(0x32, 0x00, 0x02);  // peak to peak to 1V
   write_two_bytes_to_register(0x33, 0x00, 0x01);  // SEN0 chosen by MUX 
-  write_two_bytes_to_register(0x3A, 0x00, 0x28);  // reset
+  
+  // additional settings 
+  //write_two_bytes_to_register(0x37, 0x00, 0x00);  // PGA gain control
+  //write_two_bytes_to_register(0x39, 0x00, 0x00);  // PGA offset control
+  //write_two_bytes_to_register(0x35, 0x00, 0x00);  // Current buffer gain
+  
+  
+  // soft reset 
+  write_two_bytes_to_register(0x3A, 0x00, 0x28);  // reset DSP and start ADC
+  
+  // start sensing
   write_two_bytes_to_register(0x3A, 0x00, 0x2A);  // start continuous conversion  
  }
 
