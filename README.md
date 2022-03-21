@@ -2,8 +2,8 @@
 
 This repository contains Arduino code to read the AS8579 self-capacitive sensor via SPI.
 
-Firstly, the initialization according to the "SPI Configuration" in the datasheet is carried out. 
-Secondly, the "quick read"-command to read the I and Q values can be performed.
+Firstly, the initialization according to the "SPI Configuration" in the datasheet is carried out in the setup. 
+Secondly, the "quick read"-command to read the I and Q values can be performed in the loop.
 
 To make the I and Q values useful additional settings (offset, PGA, ...) might have to be adjusted. 
 The status register (0x20) helps to find wrong settings.
